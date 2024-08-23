@@ -3,6 +3,7 @@ import threading
 import argparse  # Python module used for parsing command-line arguments
 import logging
 from concurrent.futures import ThreadPoolExecutor
+import itertools
 
 # Setting up logging
 logging.basicConfig(
@@ -19,8 +20,12 @@ def scan_ports(ip, ports):
         Function to scan a list of ports.
         Used by each thread.
      """
-    for port in ports:
-        scan_port(ip, port)
+    total_ports = len(ports)  # Getting ports len
+    for index, port in enumerate(ports):  # enumerate function - loop over ports and have an automatic counter.
+        scan_port(ip, port)  # Run scan port function
+        with lock:  # Ensures that the code block is executed by only one thread at a time
+            progress = (index + 1) / total_ports * 100  # Percentage of ports scanned based on the current index
+            print(f"Progress: {progress:.2f}%\n")  # Print for the user
 
 
 def scan_port(ip, port):
@@ -62,6 +67,29 @@ def scan_ports_concurrently(ip, start_port, end_port, num_threads):
         thread.join()
 
 
+def chunked(iterable, size):
+    """
+        Yield successive n-sized chunks from iterable.
+    """
+    iterator = iter(iterable)  # Convert the input iterable into an iterator to enable sequential access
+    for first in iterator:
+        yield list(itertools.chain([first], itertools.islice(iterator, size - 1)))
+
+
+def pool_scan_ports_concurrently(ip, start_port, end_port, num_threads):
+    """
+    This function divides the port scanning task among multiple threads, it differs from the previous one
+    because it uses Thread Pool to manage threads more efficiently and avoid creating too many threads.
+    """
+    port_range = range(start_port, end_port + 1)
+    with ThreadPoolExecutor(max_workers=num_threads) as executor:  # Creates a pool of threads
+        # Divide the port range into chunks and submit tasks to the executor
+        futures = [executor.submit(scan_ports, ip, ports) for ports in chunked(port_range, num_threads)]
+        # Wait for all tasks to complete
+        for future in futures:
+            future.result()  # Handle exceptions if any
+
+
 def main():
     # Parse commandLine arguments
     parser = argparse.ArgumentParser(description="Port Scanner with Concurrent Threads")
@@ -71,8 +99,8 @@ def main():
     parser.add_argument("--threads", type=int, default=10, help="Number of threads to use (default: 10)")
     args = parser.parse_args()
 
-    scan_ports_concurrently(args.ip, args.start_port, args.end_port, args.threads)
-
+    # scan_ports_concurrently(args.ip, args.start_port, args.end_port, args.threads)
+    pool_scan_ports_concurrently(args.ip, args.start_port, args.end_port, args.threads)
 
 if __name__ == "__main__":
     main()
