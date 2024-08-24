@@ -7,9 +7,9 @@ import itertools
 
 # Setting up logging
 logging.basicConfig(
-    filename='port_scanner.log',
+    filename="port_scanner.log",
     level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s'
+    format="%(asctime)s - %(levelname)s - %(message)s",
 )
 # Global lock for thread-safe printing or logging
 lock = threading.Lock()
@@ -17,21 +17,27 @@ lock = threading.Lock()
 
 def scan_ports(ip, ports):
     """
-        Function to scan a list of ports.
-        Used by each thread.
-     """
+    Function to scan a list of ports.
+    Used by each thread.
+    """
     total_ports = len(ports)  # Getting ports len
-    for index, port in enumerate(ports):  # enumerate function - loop over ports and have an automatic counter.
+    for index, port in enumerate(
+        ports
+    ):  # enumerate function - loop over ports and have an automatic counter.
         scan_port(ip, port)  # Run scan port function
-        with lock:  # Ensures that the code block is executed by only one thread at a time
-            progress = (index + 1) / total_ports * 100  # Percentage of ports scanned based on the current index
+        with (
+            lock
+        ):  # Ensures that the code block is executed by only one thread at a time
+            progress = (
+                (index + 1) / total_ports * 100
+            )  # Percentage of ports scanned based on the current index
             print(f"Progress: {progress:.2f}%\n")  # Print for the user
 
 
 def scan_port(ip, port):
     """
-        This Function do the port scan.
-        Input: Destination IP , destination port.
+    This Function do the port scan.
+    Input: Destination IP , destination port.
     """
     try:
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
@@ -52,13 +58,17 @@ def scan_port(ip, port):
 
 def scan_ports_concurrently(ip, start_port, end_port, num_threads):
     """
-        This function divides the port scanning task among multiple threads
+    This function divides the port scanning task among multiple threads
     """
-    port_range = range(start_port, end_port + 1)  # Port range from start port to end_port+1
+    port_range = range(
+        start_port, end_port + 1
+    )  # Port range from start port to end_port+1
     thread_list = []  # Thread list to store threads
     for i in range(num_threads):
         ports_to_scan = port_range[i::num_threads]  # Divide port range
-        thread = threading.Thread(target=scan_ports, args=(ip, ports_to_scan))  # Create thread
+        thread = threading.Thread(
+            target=scan_ports, args=(ip, ports_to_scan)
+        )  # Create thread
         thread_list.append(thread)  # Adding thread to thread list
         thread.start()  # Start thread
 
@@ -69,9 +79,11 @@ def scan_ports_concurrently(ip, start_port, end_port, num_threads):
 
 def chunked(iterable, size):
     """
-        Yield successive n-sized chunks from iterable.
+    Yield successive n-sized chunks from iterable.
     """
-    iterator = iter(iterable)  # Convert the input iterable into an iterator to enable sequential access
+    iterator = iter(
+        iterable
+    )  # Convert the input iterable into an iterator to enable sequential access
     for first in iterator:
         yield list(itertools.chain([first], itertools.islice(iterator, size - 1)))
 
@@ -82,9 +94,14 @@ def pool_scan_ports_concurrently(ip, start_port, end_port, num_threads):
     because it uses Thread Pool to manage threads more efficiently and avoid creating too many threads.
     """
     port_range = range(start_port, end_port + 1)
-    with ThreadPoolExecutor(max_workers=num_threads) as executor:  # Creates a pool of threads
+    with ThreadPoolExecutor(
+        max_workers=num_threads
+    ) as executor:  # Creates a pool of threads
         # Divide the port range into chunks and submit tasks to the executor
-        futures = [executor.submit(scan_ports, ip, ports) for ports in chunked(port_range, num_threads)]
+        futures = [
+            executor.submit(scan_ports, ip, ports)
+            for ports in chunked(port_range, num_threads)
+        ]
         # Wait for all tasks to complete
         for future in futures:
             future.result()  # Handle exceptions if any
@@ -94,13 +111,20 @@ def main():
     # Parse commandLine arguments
     parser = argparse.ArgumentParser(description="Port Scanner with Concurrent Threads")
     parser.add_argument("ip", help="Target IP address to scan")
-    parser.add_argument("--start-port", type=int, default=1, help="Starting port number (default: 1)")
-    parser.add_argument("--end-port", type=int, default=1024, help="Ending port number (default: 1024)")
-    parser.add_argument("--threads", type=int, default=10, help="Number of threads to use (default: 10)")
+    parser.add_argument(
+        "--start-port", type=int, default=1, help="Starting port number (default: 1)"
+    )
+    parser.add_argument(
+        "--end-port", type=int, default=1024, help="Ending port number (default: 1024)"
+    )
+    parser.add_argument(
+        "--threads", type=int, default=10, help="Number of threads to use (default: 10)"
+    )
     args = parser.parse_args()
 
     # scan_ports_concurrently(args.ip, args.start_port, args.end_port, args.threads)
     pool_scan_ports_concurrently(args.ip, args.start_port, args.end_port, args.threads)
+
 
 if __name__ == "__main__":
     main()
