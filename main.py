@@ -25,14 +25,14 @@ def scan_ports(ip, ports):
     total_ports = len(ports)  # Getting ports len
     try:
         for index, port in enumerate(
-                ports
+            ports
         ):  # enumerate function - loop over ports and have an automatic counter.
             scan_port(ip, port)  # Run scan port function
             with (
                 lock
             ):  # Ensures that the code block is executed by only one thread at a time
                 progress = (
-                        (index + 1) / total_ports * 100
+                    (index + 1) / total_ports * 100
                 )  # Percentage of ports scanned based on the current index
                 print(f"Progress: {progress:.2f}%\n")  # Print for the user
         return True
@@ -113,7 +113,7 @@ def pool_scan_ports_concurrently(ip, start_port, end_port, num_threads):
     port_range = range(start_port, end_port + 1)
 
     with ThreadPoolExecutor(
-            max_workers=num_threads
+        max_workers=num_threads
     ) as executor:  # Creates a pool of threads
         # Divide the port range into chunks and submit tasks to the executor
         futures = [

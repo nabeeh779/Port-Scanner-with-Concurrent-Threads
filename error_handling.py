@@ -26,4 +26,3 @@ def is_valid_thread_count(num_threads):
     if isinstance(num_threads, int) and min_threads <= num_threads <= max_threads:
         return True
     return False
-
