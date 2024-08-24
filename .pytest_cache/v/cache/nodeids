@@ -1,0 +1,6 @@
+[
+  "test_port_scanner.py::test_concurrent_port_scans[pool_scan_ports_concurrently]",
+  "test_port_scanner.py::test_concurrent_port_scans[scan_ports_concurrently]",
+  "test_port_scanner.py::test_concurrent_port_scans_exception_handling",
+  "test_port_scanner.py::test_scan_port"
+]

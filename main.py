@@ -23,17 +23,28 @@ def scan_ports(ip, ports):
     Used by each thread.
     """
     total_ports = len(ports)  # Getting ports len
-    for index, port in enumerate(
-        ports
-    ):  # enumerate function - loop over ports and have an automatic counter.
-        scan_port(ip, port)  # Run scan port function
-        with (
-            lock
-        ):  # Ensures that the code block is executed by only one thread at a time
-            progress = (
-                (index + 1) / total_ports * 100
-            )  # Percentage of ports scanned based on the current index
-            print(f"Progress: {progress:.2f}%\n")  # Print for the user
+    try:
+        for index, port in enumerate(
+                ports
+        ):  # enumerate function - loop over ports and have an automatic counter.
+            scan_port(ip, port)  # Run scan port function
+            with (
+                lock
+            ):  # Ensures that the code block is executed by only one thread at a time
+                progress = (
+                        (index + 1) / total_ports * 100
+                )  # Percentage of ports scanned based on the current index
+                print(f"Progress: {progress:.2f}%\n")  # Print for the user
+        return True
+    except Exception as e:
+        logging.error(f"Error scanning ports {ports} on {ip}: {e}")
+        return False
+
+
+def scan_ports_help(ip, ports):
+    result = scan_ports(ip, ports)
+    if not result:
+        logging.error(f"Failed to scan ports {ports} on {ip}")
 
 
 def scan_port(ip, port):
@@ -43,7 +54,7 @@ def scan_port(ip, port):
     """
     try:
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-            sock.settimeout(1)  # Timeout each connection attempt.
+            sock.settimeout(20)  # Timeout each connection attempt.
             # Attempt to connect to the port , (connect_ex) provides an error code instead of raising exceptions.
             result = sock.connect_ex((ip, port))
             print(f"Checking Port:{port} on {ip}\n")
@@ -66,17 +77,21 @@ def scan_ports_concurrently(ip, start_port, end_port, num_threads):
         start_port, end_port + 1
     )  # Port range from start port to end_port+1
     thread_list = []  # Thread list to store threads
+
     for i in range(num_threads):
         ports_to_scan = port_range[i::num_threads]  # Divide port range
         thread = threading.Thread(
-            target=scan_ports, args=(ip, ports_to_scan)
+            target=scan_ports_help, args=(ip, ports_to_scan)
         )  # Create thread
         thread_list.append(thread)  # Adding thread to thread list
         thread.start()  # Start thread
 
     # Wait for all threads to complete
     for thread in thread_list:
-        thread.join()
+        try:
+            thread.join()
+        except Exception as e:
+            logging.error(f"Thread failed with exception: {e}")
 
 
 def chunked(iterable, size):
@@ -96,17 +111,21 @@ def pool_scan_ports_concurrently(ip, start_port, end_port, num_threads):
     because it uses Thread Pool to manage threads more efficiently and avoid creating too many threads.
     """
     port_range = range(start_port, end_port + 1)
+
     with ThreadPoolExecutor(
-        max_workers=num_threads
+            max_workers=num_threads
     ) as executor:  # Creates a pool of threads
         # Divide the port range into chunks and submit tasks to the executor
         futures = [
-            executor.submit(scan_ports, ip, ports)
+            executor.submit(scan_ports_help, ip, ports)
             for ports in chunked(port_range, num_threads)
         ]
         # Wait for all tasks to complete
         for future in futures:
-            future.result()  # Handle exceptions if any
+            try:
+                future.result()  # Retrieve the result to handle exceptions if any
+            except Exception as e:
+                logging.error(f"Task failed with exception: {e}")
 
 
 def main():

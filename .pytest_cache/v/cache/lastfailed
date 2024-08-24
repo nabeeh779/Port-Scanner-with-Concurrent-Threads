@@ -1,0 +1,3 @@
+{
+  "test_port_scanner.py::test_concurrent_port_scans_exception_handling": true
+}
