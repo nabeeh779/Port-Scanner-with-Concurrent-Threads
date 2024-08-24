@@ -1,9 +1,11 @@
 import socket
+import sys
 import threading
 import argparse  # Python module used for parsing command-line arguments
 import logging
 from concurrent.futures import ThreadPoolExecutor
 import itertools
+from error_handling import *
 
 # Setting up logging
 logging.basicConfig(
@@ -121,6 +123,21 @@ def main():
         "--threads", type=int, default=10, help="Number of threads to use (default: 10)"
     )
     args = parser.parse_args()
+
+    if not check_ip(args.ip):
+        print(f"Error: Invalid IP address '{args.ip}'.")
+        sys.exit(1)
+    if not check_ports(args.start_port, args.end_port):
+        print(
+            f"Error: Invalid port range {args.start_port} - {args.end_port}. Ports must be between 1 and 65535 and "
+            f"start port must be less than or equal to end port. "
+        )
+        sys.exit(1)
+    if not is_valid_thread_count(args.threads):
+        print(
+            f"Error: Invalid number of threads {args.threads}. Number of threads must be between 1 and 1000."
+        )
+        sys.exit(1)
 
     # scan_ports_concurrently(args.ip, args.start_port, args.end_port, args.threads)
     pool_scan_ports_concurrently(args.ip, args.start_port, args.end_port, args.threads)
